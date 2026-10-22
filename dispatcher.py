@@ -33,7 +33,8 @@ class VTable:
     def __init__(self, entries: Dict[str, MethodLike], owning_class_name: str = "?") -> None:
         """`owning_class_name` is just for error messages -- store it alongside entries."""
         # TODO: store entries and owning_class_name.
-        raise NotImplementedError
+        self.entries = entries
+        self.owning_class_name = owning_class_name
 
     def resolve(self, method_name: str) -> MethodLike:
         """
@@ -42,7 +43,10 @@ class VTable:
         owning class and the missing method if it doesn't exist.
         """
         # TODO
-        raise NotImplementedError
+        if method_name in self.entries:
+            return self.entries[method_name]
+
+        raise AttributeError(f"Class {self.owning_class_name} has no method {method_name}")
 
 
 def build_vtable(class_node: ClassDecl, parent_vtable: Optional[VTable] = None) -> VTable:
@@ -54,13 +58,22 @@ def build_vtable(class_node: ClassDecl, parent_vtable: Optional[VTable] = None) 
     Pass class_node.name as the new VTable's owning_class_name.
     """
     # TODO
-    raise NotImplementedError
+    if parent_vtable is not None:
+        entries = parent_vtable.entries.copy()
+    else:
+        entries = {}
+
+    entries.update(class_node.methods)
+
+    return VTable(entries, class_node.name)
 
 
 class USIObject:
     def __init__(self, class_descriptor: VTable, fields: dict) -> None:
         # TODO: store both. class_descriptor is this object's ACTUAL runtime VTable.
-        raise NotImplementedError
+        
+        self.class_descriptor = class_descriptor
+        self.fields = fields
 
 
 def dispatch(obj: USIObject, method_name: str, args: list, caller_env) -> object:
@@ -70,4 +83,7 @@ def dispatch(obj: USIObject, method_name: str, args: list, caller_env) -> object
     resolved_method.call([obj, *args], caller_env).
     """
     # TODO
-    raise NotImplementedError
+    
+    resolved_method = obj.class_descriptor.resolve(method_name)
+    
+    return resolved_method.call([obj, *args], caller_env)
